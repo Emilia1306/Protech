@@ -1,0 +1,6 @@
+@Protech_HostAddress = http://localhost:5194
+
+GET {{Protech_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

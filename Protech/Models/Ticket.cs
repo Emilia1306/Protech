@@ -19,7 +19,7 @@ public partial class Ticket
 
     public string? State { get; set; }
 
-    public DateOnly? CreationDate { get; set; }
+    public DateTime? CreationDate { get; set; }
 
     public virtual ICollection<BackupFile> BackupFiles { get; set; } = new List<BackupFile>();
 

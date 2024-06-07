@@ -20,7 +20,7 @@ namespace Protech.Controllers
         public IActionResult Get()
         {
             List<Ticket> ticketList = (from t in _context.Tickets
-                                 select t).ToList();
+                                       select t).ToList();
 
             if (ticketList.Count == 0)
             {
@@ -50,7 +50,7 @@ namespace Protech.Controllers
             int progreso = 0;
             int espera = 0;
 
-            switch (categoria) 
+            switch (categoria)
             {
                 case 1:
                     total = _context.Tickets.Count();
@@ -70,7 +70,7 @@ namespace Protech.Controllers
                     progreso = _context.Tickets.Count(t => t.IdEmployee == userId && t.State == "EN PROGRESO");
                     espera = _context.Tickets.Count(t => t.IdEmployee == userId && t.State == "EN ESPERA");
                     break;
-                default :
+                default:
                     return BadRequest();
             }
             var stats = new
@@ -84,7 +84,33 @@ namespace Protech.Controllers
             return Ok(stats);
         }
         [HttpGet]
-        [Route("Filtrar")]
+        [Route("UserTickets")]
+        public IActionResult GetUserTickets(int userId)
+        {
+            List<Ticket> tickets = (from t in _context.Tickets
+                                    where t.IdUser == userId
+                                    select t).ToList();
+            if (tickets.Count == 0)
+            {
+                return NotFound();
+            }
+            return Ok(tickets);
+        }
+        [HttpGet]
+        [Route("Assigned")]
+        public IActionResult GetAssignedTickets(int employeeId) 
+        {
+            List<Ticket> tickets = (from t in _context.Tickets
+                                   where t.IdEmployee == employeeId
+                                   select t).ToList();
+            if (tickets.Count == 0)
+            {
+                return NotFound();
+            }
+            return Ok(tickets);
+        }
+        [HttpGet]
+        [Route("Filter")]
         public IActionResult GetFilteredTickets(string? estado = null, string? empleado = null, DateTime? fechaInicio = null, DateTime? fechaFinal = null) {
 
             var consulta = from t in _context.Tickets

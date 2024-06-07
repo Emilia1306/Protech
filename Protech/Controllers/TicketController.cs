@@ -151,6 +151,31 @@ namespace Protech.Controllers
             }
             return Ok(tickets);
         }
+        [HttpPost]
+        [Route("Create")]
+        public IActionResult CreateTicket(int userId, [FromBody] Ticket ticket) 
+        {
+            //falta ver lo de los archivos de respaldo
+            try {
+                var newTicket = new Ticket
+                {
+                    IdUser = userId,
+                    Name = ticket.Name,
+                    Description = ticket.Description,
+                    Priority = ticket.Priority,
+                    State = "EN ESPERA",
+                    CreationDate = DateTime.Now
+                };
+
+                _context.Tickets.Add(newTicket);
+                _context.SaveChanges();
+                return Ok(newTicket);
+            }
+            catch (Exception ex) 
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
 
     }

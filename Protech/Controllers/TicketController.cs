@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Protech.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Protech.Controllers
 {
@@ -28,54 +29,59 @@ namespace Protech.Controllers
             return Ok(ticketList);
         }
         [HttpGet]
-        [Route("Total")]
-        public IActionResult GetTotalTickets() {
-            int totalTickets = _context.Tickets.Count();
-
-            if (totalTickets == 0)
-            {
-                return Ok(totalTickets);
-            }
-            return Ok(totalTickets);
-        }
-        [HttpGet]
-        [Route("Resuelto")]
-        public IActionResult GetResolvedTickets()
+        [Route("Stats")]
+        public IActionResult GetStats(int userId)
         {
-            int ticketsResueltos = _context.Tickets.Count(t => t.State == "RESUELTO");
+            var user = (from u in _context.Users
+                        where u.IdUser == userId
+                        select u).FirstOrDefault();
 
-            if (ticketsResueltos == 0)
+            if (user == null)
             {
-                return Ok(ticketsResueltos);
+                return NotFound();
             }
 
-            return Ok(ticketsResueltos);
-        }
-        [HttpGet]
-        [Route("Progreso")]
-        public IActionResult GetProgressTickets()
-        {
-            int ticketsProgreso = _context.Tickets.Count(t => t.State == "EN PROGRESO");
+            var categoria = (from uc in _context.UserCategories
+                             where uc.IdUserCategory == user.IdUserCategory
+                             select uc.IdUserCategory).FirstOrDefault();
 
-            if (ticketsProgreso == 0)
+            int total = 0;
+            int resueltos = 0;
+            int progreso = 0;
+            int espera = 0;
+
+            switch (categoria) 
             {
-                return Ok(ticketsProgreso);
+                case 1:
+                    total = _context.Tickets.Count();
+                    resueltos = _context.Tickets.Count(t => t.State == "RESUELTO");
+                    progreso = _context.Tickets.Count(t => t.State == "EN PROGRESO");
+                    espera = _context.Tickets.Count(t => t.State == "EN ESPERA");
+                    break;
+                case 2:
+                    total = _context.Tickets.Count(t => t.IdUser == userId);
+                    resueltos = _context.Tickets.Count(t => t.IdUser == userId && t.State == "RESUELTO");
+                    progreso = _context.Tickets.Count(t => t.IdUser == userId && t.State == "EN PROGRESO");
+                    espera = _context.Tickets.Count(t => t.IdUser == userId && t.State == "EN ESPERA");
+                    break;
+                case 3:
+                    total = _context.Tickets.Count(t => t.IdEmployee == userId);
+                    resueltos = _context.Tickets.Count(t => t.IdEmployee == userId && t.State == "RESUELTO");
+                    progreso = _context.Tickets.Count(t => t.IdEmployee == userId && t.State == "EN PROGRESO");
+                    espera = _context.Tickets.Count(t => t.IdEmployee == userId && t.State == "EN ESPERA");
+                    break;
+                default :
+                    return BadRequest();
             }
-
-            return Ok(ticketsProgreso);
-        }
-        [HttpGet]
-        [Route("Espera")]
-        public IActionResult GetPendingTickets()
-        {
-            int ticketsEspera = _context.Tickets.Count(t => t.State == "EN ESPERA");
-
-            if (ticketsEspera == 0)
+            var stats = new
             {
-                return Ok(ticketsEspera);
-            }
+                Total = total,
+                Resueltos = resueltos,
+                Progreso = progreso,
+                Espera = espera
+            };
 
-            return Ok(ticketsEspera);
+            return Ok(stats);
         }
         [HttpGet]
         [Route("Filtrar")]

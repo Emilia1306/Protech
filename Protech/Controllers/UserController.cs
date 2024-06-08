@@ -27,18 +27,35 @@ namespace Protech.Controllers
             }
             return Ok(userList);
         }
+        [HttpGet]
+        [Route("GetEmployees")]
+        public IActionResult GetEmployees()
+        {
+
+            List<User> userList = (from t in _context.Users
+                                   where t.IdUserCategory == 3
+                                   select t).ToList();
+
+            if (userList.Count == 0)
+            {
+                return NotFound("Employees not found");
+            }
+            return Ok(userList);
+        }
 
         [HttpPost]
         [Route("CreateClient")]
         public IActionResult createClient([FromBody] User user) {
             try {
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(user.Password);
+
                 var client = new User
                 {
                     IdUserCategory = 2,
                     Name = user.Name,
                     Email = user.Email,
                     Cellphone = user.Cellphone,
-                    Password = user.Password,
+                    Password = hashedPassword,
                     ChangePassword = true,
                     CompanyName = user.CompanyName,
                     JobPosition = user.JobPosition
@@ -59,13 +76,15 @@ namespace Protech.Controllers
         {
             try
             {
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(user.Password);
+
                 var client = new User
                 {
                     IdUserCategory = 3,
                     Name = user.Name,
                     Email = user.Email,
                     Cellphone = user.Cellphone,
-                    Password = user.Password,
+                    Password = hashedPassword,
                     ChangePassword = true,
                     CompanyName = user.CompanyName,
                     JobPosition = user.JobPosition
@@ -147,7 +166,8 @@ namespace Protech.Controllers
                 {
                     return NotFound("User not found");
                 }
-                user.Password = password;
+                var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
+                user.Password = hashedPassword;
                 _context.SaveChanges();
                 return Ok(user);
             }

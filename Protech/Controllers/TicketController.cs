@@ -263,7 +263,6 @@ namespace Protech.Controllers
         public class TicketCreateModel
         {
             public int? IdUser { get; set; }
-            public int? IdEmployee { get; set; }
             public string Name { get; set; }
             public string Description { get; set; }
             public string Priority { get; set; }

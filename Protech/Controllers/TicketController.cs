@@ -10,10 +10,17 @@ namespace Protech.Controllers
     public class TicketController : ControllerBase
     {
         private readonly ProtechContext _context;
+        private readonly string _uploadFolderPath;
 
         public TicketController(ProtechContext context)
         {
             _context = context;
+            _uploadFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+
+            if (!Directory.Exists(_uploadFolderPath))
+            {
+                Directory.CreateDirectory(_uploadFolderPath);
+            }
         }
         [HttpGet]
         [Route("GetAll")]
@@ -151,7 +158,53 @@ namespace Protech.Controllers
             }
             return Ok(tickets);
         }
+        [HttpPost]
+        [Route("createTicket")]
+        public async Task<IActionResult> CreateTicket([FromForm] TicketCreateModel model)
+        {
+            if (model == null)
+            {
+                return BadRequest();
+            }
 
+            var ticket = new Ticket
+            {
+                IdUser = model.IdUser,
+                IdEmployee = model.IdEmployee,
+                Name = model.Name,
+                Description = model.Description,
+                Priority = model.Priority,
+                State = model.State,
+                CreationDate = DateTime.Now
+            };
+
+            _context.Tickets.Add(ticket);
+            await _context.SaveChangesAsync();
+
+            if (model.Files != null && model.Files.Count > 0)
+            {
+                foreach (var file in model.Files)
+                {
+                    var filePath = Path.Combine(_uploadFolderPath, file.FileName);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.CopyToAsync(stream);
+                    }
+
+                    var backupFile = new BackupFile
+                    {
+                        IdTicket = ticket.IdTicket,
+                        Name = file.FileName
+                    };
+
+                    _context.BackupFiles.Add(backupFile);
+                }
+
+                await _context.SaveChangesAsync();
+            }
+
+            return Ok(new { message = "Ticket creado con éxito", ticketId = ticket.IdTicket });
+        }
         [HttpPost]
         [Route("Create")]
         public IActionResult CreateTicket(int userId, [FromBody] Ticket ticket) 
@@ -198,6 +251,16 @@ namespace Protech.Controllers
             catch (Exception ex) {
                 return BadRequest(ex.Message);
             }
+        }
+        public class TicketCreateModel
+        {
+            public int? IdUser { get; set; }
+            public int? IdEmployee { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+            public string Priority { get; set; }
+            public string State { get; set; }
+            public List<IFormFile> Files { get; set; }
         }
 
     }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Protech.Models;
 
@@ -13,6 +14,41 @@ namespace Protech.Controllers
         public UserController(ProtechContext context)
         {
             _context = context;
+        }
+        [HttpPost]
+        [Route("Login")]
+        public IActionResult Login([FromBody] Login request)
+        {
+            try
+            {
+                var user = _context.Users.SingleOrDefault(u => u.Email == request.Email);
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
+
+                bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
+                if (!isPasswordValid)
+                {
+                    return NotFound("Invalid password");
+                }
+                var userInfo = new
+                {
+                    user.IdUser,
+                    user.Name,
+                    user.Email,
+                    user.Cellphone,
+                    user.CompanyName,
+                    user.JobPosition,
+                    user.IdUserCategory
+                };
+
+                return Ok(userInfo);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
         [HttpGet]
         [Route("GetAll")]

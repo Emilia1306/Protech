@@ -24,7 +24,7 @@ namespace Protech.Controllers
 
             if (ticketList.Count == 0)
             {
-                return NotFound();
+                return NotFound("Tickets not found");
             }
             return Ok(ticketList);
         }
@@ -38,7 +38,7 @@ namespace Protech.Controllers
 
             if (user == null)
             {
-                return NotFound();
+                return NotFound("User not found");
             }
 
             var categoria = (from uc in _context.UserCategories
@@ -92,7 +92,7 @@ namespace Protech.Controllers
                                     select t).ToList();
             if (tickets.Count == 0)
             {
-                return NotFound();
+                return NotFound("User tickets not found");
             }
             return Ok(tickets);
         }
@@ -105,7 +105,7 @@ namespace Protech.Controllers
                                    select t).ToList();
             if (tickets.Count == 0)
             {
-                return NotFound();
+                return NotFound("Assigned tickets not found");
             }
             return Ok(tickets);
         }
@@ -160,6 +160,7 @@ namespace Protech.Controllers
                 var newTicket = new Ticket
                 {
                     IdUser = userId,
+                    IdEmployee = ticket.IdEmployee,
                     Name = ticket.Name,
                     Description = ticket.Description,
                     Priority = ticket.Priority,
@@ -176,7 +177,27 @@ namespace Protech.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpPut]
+        [Route("ChangeState")]
+        public IActionResult ChangeTicketState(int ticketId, string state) 
+        {
 
+            try {
+                var ticket = (from t in _context.Tickets
+                              where t.IdTicket == ticketId
+                              select t).FirstOrDefault();
+                if (ticket == null)
+                {
+                    return NotFound("Ticket not found");
+                }
+                ticket.State = state;
+                _context.SaveChanges();
+                return Ok(ticket);
+            }
+            catch (Exception ex) {
+                return BadRequest(ex.Message);
+            }
+        }
 
     }
 }

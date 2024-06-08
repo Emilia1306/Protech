@@ -2,6 +2,7 @@
 using Protech.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 
 namespace Protech.Controllers
 {
@@ -158,6 +159,39 @@ namespace Protech.Controllers
             }
             return Ok(tickets);
         }
+        [HttpPut]
+        [Route("Assign")]
+        public async Task<IActionResult> AssignTicket(int ticketId, int employeeId) {
+            var ticket = (from t in _context.Tickets
+                          where t.IdTicket == ticketId
+                          select t).FirstOrDefault();
+            if (ticket == null)
+            {
+                return NotFound("Ticket not found");
+            }
+            var employeeExists = await(from e in _context.Users
+                                       where e.IdUser == employeeId
+                                       select e).AnyAsync();
+
+            if (!employeeExists)
+            {
+                return NotFound("Employee not found.");
+            }
+
+            ticket.IdEmployee = employeeId;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            return Ok(ticket);
+
+        }
         [HttpPost]
         [Route("createTicket")]
         public async Task<IActionResult> CreateTicket([FromForm] TicketCreateModel model)
@@ -170,7 +204,7 @@ namespace Protech.Controllers
             var ticket = new Ticket
             {
                 IdUser = model.IdUser,
-                IdEmployee = model.IdEmployee,
+                IdEmployee = null,
                 Name = model.Name,
                 Description = model.Description,
                 Priority = model.Priority,

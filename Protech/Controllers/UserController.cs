@@ -21,7 +21,23 @@ namespace Protech.Controllers
         {
             try
             {
-                var user = _context.Users.SingleOrDefault(u => u.Email == request.Email);
+                var user = (from u in _context.Users
+                            join uc in _context.UserCategories on u.IdUserCategory equals uc.IdUserCategory
+                            where u.Email == request.Email
+                            select new
+                            {
+                                u.IdUser,
+                                u.Name,
+                                u.Email,
+                                u.Cellphone,
+                                u.ChangePassword,
+                                u.CompanyName,
+                                u.JobPosition,
+                                u.IdUserCategory,
+                                UserCategoryName = uc.Name,
+                                u.Password
+                            }).SingleOrDefault();
+
                 if (user == null)
                 {
                     return NotFound("User not found");
@@ -41,7 +57,8 @@ namespace Protech.Controllers
                     user.ChangePassword,
                     user.CompanyName,
                     user.JobPosition,
-                    user.IdUserCategory
+                    user.IdUserCategory,
+                    user.UserCategoryName
                 };
 
                 return Ok(userInfo);

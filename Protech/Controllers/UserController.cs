@@ -205,6 +205,7 @@ namespace Protech.Controllers
                 }
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
                 user.Password = hashedPassword;
+                user.ChangePassword = false;
                 _context.SaveChanges();
                 return Ok(user);
             }

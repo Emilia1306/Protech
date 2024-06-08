@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Protech.Models;
 
 namespace Protech.Controllers
@@ -70,16 +71,33 @@ namespace Protech.Controllers
         }
         [HttpGet]
         [Route("GetAll")]
-        public IActionResult GetAll() {
+        public IActionResult GetAll()
+        {
 
-            List<User> userList = (from t in _context.Users
-                                   select t).ToList();
+            List<User> userList = _context.Users
+                .Include(u => u.IdUserCategoryNavigation)
+                .ToList();
 
             if (userList.Count == 0)
             {
                 return NotFound("Users not found");
             }
-            return Ok(userList);
+
+            var result = userList.Select(u => new
+            {
+                IdUser = u.IdUser,
+                IdUserCategory = u.IdUserCategory,
+                Name = u.Name,
+                Email = u.Email,
+                Cellphone = u.Cellphone,
+                Password = u.Password,
+                ChangePassword = u.ChangePassword,
+                CompanyName = u.CompanyName,
+                JobPosition = u.JobPosition,
+                UserCategoryName = u.IdUserCategoryNavigation?.Name
+            }).ToList();
+
+            return Ok(result);
         }
         [HttpGet]
         [Route("GetEmployees")]

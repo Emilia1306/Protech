@@ -29,18 +29,57 @@ namespace Protech.Controllers
         }
 
         [HttpPost]
-        [Route("Create")]
-        public IActionResult crearUsuario([FromBody] User user) {
+        [Route("CreateClient")]
+        public IActionResult createClient([FromBody] User user) {
             try {
-                _context.Users.Add(user);
+                var client = new User
+                {
+                    IdUserCategory = 2,
+                    Name = user.Name,
+                    Email = user.Email,
+                    Cellphone = user.Cellphone,
+                    Password = user.Password,
+                    ChangePassword = true,
+                    CompanyName = user.CompanyName,
+                    JobPosition = user.JobPosition
+                };
+                _context.Users.Add(client);
                 _context.SaveChanges();
-                return Ok(user);
+                return Ok(client);
             }
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpPost]
+        [Route("CreateSupport")]
+        public IActionResult createSupport([FromBody] User user)
+        {
+            try
+            {
+                var client = new User
+                {
+                    IdUserCategory = 3,
+                    Name = user.Name,
+                    Email = user.Email,
+                    Cellphone = user.Cellphone,
+                    Password = user.Password,
+                    ChangePassword = true,
+                    CompanyName = user.CompanyName,
+                    JobPosition = user.JobPosition
+                };
+                _context.Users.Add(client);
+                _context.SaveChanges();
+                return Ok(client);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpGet]
         [Route("UserInfo")]
         public IActionResult GetUser(int id) {
@@ -92,6 +131,27 @@ namespace Protech.Controllers
             }
             catch (Exception ex)
             {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut]
+        [Route("ChangePassword")]
+        public IActionResult changePassword(int userId, string password) {
+            try
+            {
+                var user = (from u in _context.Users
+                            where u.IdUser == userId
+                            select u).FirstOrDefault();
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
+                user.Password = password;
+                _context.SaveChanges();
+                return Ok(user);
+            }
+            catch(Exception ex) {
                 return BadRequest(ex.Message);
             }
         }

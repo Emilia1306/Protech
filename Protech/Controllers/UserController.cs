@@ -38,6 +38,7 @@ namespace Protech.Controllers
                     user.Name,
                     user.Email,
                     user.Cellphone,
+                    user.ChangePassword,
                     user.CompanyName,
                     user.JobPosition,
                     user.IdUserCategory

@@ -174,7 +174,7 @@ namespace Protech.Controllers
                 Name = model.Name,
                 Description = model.Description,
                 Priority = model.Priority,
-                State = model.State,
+                State = "EN ESPERA",
                 CreationDate = DateTime.Now
             };
 
@@ -205,32 +205,6 @@ namespace Protech.Controllers
 
             return Ok(new { message = "Ticket creado con éxito", ticketId = ticket.IdTicket });
         }
-        [HttpPost]
-        [Route("Create")]
-        public IActionResult CreateTicket(int userId, [FromBody] Ticket ticket) 
-        {
-            //falta ver lo de los archivos de respaldo
-            try {
-                var newTicket = new Ticket
-                {
-                    IdUser = userId,
-                    IdEmployee = ticket.IdEmployee,
-                    Name = ticket.Name,
-                    Description = ticket.Description,
-                    Priority = ticket.Priority,
-                    State = "EN ESPERA",
-                    CreationDate = DateTime.Now
-                };
-
-                _context.Tickets.Add(newTicket);
-                _context.SaveChanges();
-                return Ok(newTicket);
-            }
-            catch (Exception ex) 
-            {
-                return BadRequest(ex.Message);
-            }
-        }
         [HttpPut]
         [Route("ChangeState")]
         public IActionResult ChangeTicketState(int ticketId, string state) 
@@ -259,7 +233,6 @@ namespace Protech.Controllers
             public string Name { get; set; }
             public string Description { get; set; }
             public string Priority { get; set; }
-            public string State { get; set; }
             public List<IFormFile> Files { get; set; }
         }
 

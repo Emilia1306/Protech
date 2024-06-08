@@ -3,6 +3,8 @@ using Protech.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace Protech.Controllers
 {
@@ -95,15 +97,63 @@ namespace Protech.Controllers
         [Route("UserTickets")]
         public IActionResult GetUserTickets(int userId)
         {
-            List<Ticket> tickets = (from t in _context.Tickets
-                                    where t.IdUser == userId
-                                    select t).ToList();
+            var options = new JsonSerializerOptions
+            {
+                ReferenceHandler = ReferenceHandler.Preserve // Agregar esta línea para preservar las referencias circulares
+            };
+
+            var tickets = _context.Tickets
+                .Where(t => t.IdUser == userId)
+                .Select(t => new
+                {
+                    t.IdTicket,
+                    t.Name,
+                    AdditionalTasks = t.TicketAdditionalTasks.Select(task => new
+                    {
+                        task.IdTicketAdditionalTask,
+                        task.Description,
+                        task.Finished
+                    }).ToList(),
+                    Comments = t.TicketComments.Select(comment => new
+                    {
+                        comment.IdTicketComment,
+                        comment.Comment,
+                        comment.Date,
+                        User = new
+                        {
+                            comment.IdUserNavigation.IdUser,
+                            comment.IdUserNavigation.Name, 
+                            comment.IdUserNavigation.Email
+                        }
+                    }).ToList(),
+                    BackupFiles = t.BackupFiles.Select(file => new
+                    {
+                        file.IdBackupFile,
+                        file.Name,
+                    }).ToList()
+                })
+                .ToList();
+
             if (tickets.Count == 0)
             {
                 return NotFound("User tickets not found");
             }
-            return Ok(tickets);
+
+            var json = JsonSerializer.Serialize(tickets, options); // Serializar los tickets a JSON con las opciones de serialización configuradas
+
+            var contentResult = new ContentResult
+            {
+                Content = json,
+                ContentType = "application/json",
+                StatusCode = 200
+            };
+
+            return contentResult; // Devolver el resultado como un ContentResult
         }
+
+
+
+
         [HttpGet]
         [Route("Assigned")]
         public IActionResult GetAssignedTickets(int employeeId) 

@@ -114,7 +114,6 @@ namespace Protech.Controllers
             }
             return Ok(userList);
         }
-
         [HttpPost]
         [Route("CreateClient")]
         public IActionResult createClient([FromBody] User user) {
@@ -141,7 +140,6 @@ namespace Protech.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
         [HttpPost]
         [Route("CreateSupport")]
         public IActionResult createSupport([FromBody] User user)
@@ -170,7 +168,6 @@ namespace Protech.Controllers
                 return BadRequest(ex.Message);
             }
         }
-
         [HttpGet]
         [Route("UserInfo")]
         public IActionResult GetUser(int id) {

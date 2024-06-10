@@ -118,6 +118,7 @@ namespace Protech.Controllers
                     CreationDate = t.CreationDate,
                     Priority = t.Priority,
                     State = t.State,
+                    Category = t.Category,
                     IdEmployeeNavigation = _context.Users
                                             .Where(u => u.IdUser == t.IdEmployee)
                                             .Select(u => new User
@@ -133,9 +134,16 @@ namespace Protech.Controllers
                                         Name = bc.Name
                                     })
                                     .ToList(),
-                    IdUserNavigation = (from u in _context.Users
-                                       where u.IdUser == t.IdUser
-                                       select u).FirstOrDefault(),
+                    IdUserNavigation = _context.Users
+                                        .Where(u => u.IdUser == t.IdUser)
+                                        .Select(u => new User
+                                        {
+                                            IdUser = u.IdUser,
+                                            Name = u.Name,
+                                            Email = u.Email,
+                                            Cellphone = u.Cellphone
+                                        })
+                                        .FirstOrDefault(),
                     TicketComments = _context.TicketComments
                                         .Where(tc => tc.IdTicket == t.IdTicket)
                                         .Select(tc => new TicketComment
@@ -196,7 +204,7 @@ namespace Protech.Controllers
             };
 
             var tickets = _context.Tickets
-                .Select(t => new
+                .Select(t => new Ticket
                 {
                     IdTicket = t.IdTicket,
                     IdUser = t.IdUser,
@@ -206,6 +214,7 @@ namespace Protech.Controllers
                     CreationDate = t.CreationDate,
                     Priority = t.Priority,
                     State = t.State,
+                    Category = t.Category,
                     IdEmployeeNavigation = _context.Users
                                             .Where(u => u.IdUser == t.IdEmployee)
                                             .Select(u => new User
@@ -221,9 +230,16 @@ namespace Protech.Controllers
                                         Name = bc.Name
                                     })
                                     .ToList(),
-                    IdUserNavigation = (from u in _context.Users
-                                        where u.IdUser == t.IdUser
-                                        select u).FirstOrDefault(),
+                    IdUserNavigation = _context.Users
+                                        .Where(u => u.IdUser == t.IdUser)
+                                        .Select(u => new User
+                                        {
+                                            IdUser = u.IdUser,
+                                            Name = u.Name,
+                                            Email = u.Email,
+                                            Cellphone = u.Cellphone
+                                        })
+                                        .FirstOrDefault(),
                     TicketComments = _context.TicketComments
                                         .Where(tc => tc.IdTicket == t.IdTicket)
                                         .Select(tc => new TicketComment
@@ -240,7 +256,7 @@ namespace Protech.Controllers
                                                                 }).FirstOrDefault()
                                         })
                                         .ToList(),
-                TicketAdditionalTasks = _context.TicketAdditionalTasks
+                    TicketAdditionalTasks = _context.TicketAdditionalTasks
                                             .Where(tat => tat.IdTicket == t.IdTicket)
                                             .Select(tat => new TicketAdditionalTask
                                             {
@@ -262,11 +278,6 @@ namespace Protech.Controllers
                                             .ToList()
                 })
                 .ToList();
-
-            if (tickets.Count == 0)
-            {
-                return NotFound("Tickets not found");
-            }
 
             var json = JsonSerializer.Serialize(tickets, options); // Serializar los tickets a JSON con las opciones de serialización configuradas
 
@@ -315,9 +326,16 @@ namespace Protech.Controllers
                                         Name = bc.Name
                                     })
                                     .ToList(),
-                    IdUserNavigation = (from u in _context.Users
-                                        where u.IdUser == t.IdUser
-                                        select u).FirstOrDefault(),
+                    IdUserNavigation = _context.Users
+                                        .Where(u => u.IdUser == t.IdUser)
+                                        .Select(u => new User
+                                        {
+                                            IdUser = u.IdUser,
+                                            Name = u.Name,
+                                            Email = u.Email,
+                                            Cellphone = u.Cellphone
+                                        })
+                                        .FirstOrDefault(),
                     TicketComments = _context.TicketComments
                                         .Where(tc => tc.IdTicket == t.IdTicket)
                                         .Select(tc => new TicketComment
@@ -333,7 +351,27 @@ namespace Protech.Controllers
                                                                     Name = u.Name,
                                                                 }).FirstOrDefault()
                                         })
-                                        .ToList()
+                                        .ToList(),
+                    TicketAdditionalTasks = _context.TicketAdditionalTasks
+                                            .Where(tat => tat.IdTicket == t.IdTicket)
+                                            .Select(tat => new TicketAdditionalTask
+                                            {
+                                                IdTicketAdditionalTask = tat.IdTicketAdditionalTask,
+                                                Description = tat.Description,
+                                                Finished = tat.Finished,
+                                                IdEmployeeNavigation = _context.Users
+                                                                        .Where(u => u.IdUser == tat.IdEmployee)
+                                                                        .Select(u => new User
+                                                                        {
+                                                                            Name = u.Name,
+                                                                            TicketAdditionalTasks = null,
+                                                                            TicketComments = null,
+                                                                            TicketIdEmployeeNavigations = null,
+                                                                            TicketIdUserNavigations = null
+                                                                        })
+                                                                        .FirstOrDefault(),
+                                            })
+                                            .ToList()
                 })
                 .ToList();
 
@@ -462,7 +500,8 @@ namespace Protech.Controllers
                 Description = model.Description,
                 Priority = model.Priority,
                 State = "EN ESPERA",
-                CreationDate = DateTime.Now
+                CreationDate = DateTime.Now,
+                Category = model.Category
             };
 
             _context.Tickets.Add(ticket);
@@ -525,7 +564,7 @@ namespace Protech.Controllers
 
                 enviarCorreo.UpdateTicketStatus(user.Email, user.Name, ticket.IdTicket, DateTime.Now, ticket.Name, ticket.State);
 
-                return Ok(ticket);
+                return Ok();
             }
             catch (Exception ex) {
                 return BadRequest(ex.Message);
@@ -538,6 +577,7 @@ namespace Protech.Controllers
             public string Description { get; set; }
             public string Priority { get; set; }
             public List<IFormFile> Files { get; set; }
+            public string Category { get; set; }
         }
 
     }

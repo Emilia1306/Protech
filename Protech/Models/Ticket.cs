@@ -21,6 +21,8 @@ public partial class Ticket
 
     public DateTime? CreationDate { get; set; }
 
+    public string? Category { get; set; }
+
     public virtual ICollection<BackupFile> BackupFiles { get; set; } = new List<BackupFile>();
 
     public virtual User? IdEmployeeNavigation { get; set; }

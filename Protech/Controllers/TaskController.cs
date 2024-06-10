@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Protech.Models;
 using Protech.Services;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace Protech.Controllers
 {
@@ -39,13 +41,13 @@ namespace Protech.Controllers
                 var employee = (from e in _context.Users
                                 where e.IdUser == employeeId
                                 select e).FirstOrDefault();
+
                 if (employee == null)
                 {
                     return NotFound("Employee Not Found");
                 }
 
                 var newTask = new TicketAdditionalTask {
-
                     IdTicket = task.IdTicket,
                     IdEmployee = employeeId,
                     Description = task.Description,
@@ -58,7 +60,21 @@ namespace Protech.Controllers
 
                 enviarCorreo.TaskAssignment(employee.Email, employee.Name, newTask.IdTicketAdditionalTask, newTask.IdTicket, DateTime.Now, newTask.Description);
 
-                return Ok(newTask);
+                var options = new JsonSerializerOptions
+                {
+                    ReferenceHandler = ReferenceHandler.Preserve // Agregar esta línea para preservar las referencias circulares
+                };
+
+                var json = JsonSerializer.Serialize(newTask, options);
+
+                var contentResult = new ContentResult
+                {
+                    Content = json,
+                    ContentType = "application/json",
+                    StatusCode = 200
+                };
+
+                return contentResult;
             }
             catch (Exception ex)
             {
@@ -101,7 +117,7 @@ namespace Protech.Controllers
 
                 enviarCorreo.UpdateTaskStatus(user.Email, user.Name, ticket.IdTicket, DateTime.Now, taskId, task.Description);
 
-                return Ok(task);
+                return Ok();
             }
             catch (Exception ex)
             {

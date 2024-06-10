@@ -23,7 +23,7 @@ namespace Protech.Controllers
                     IdTicket = ticketId,
                     IdUser = comment.IdUser,
                     Comment = comment.Comment,
-                    Date = DateTime.Now
+                    Date = DateTime.Now,
                 };
                 _context.TicketComments.Add(newComment);
                 _context.SaveChanges();

@@ -121,6 +121,12 @@ namespace Protech.Controllers
         [Route("CreateClient")]
         public IActionResult createClient([FromBody] User user) {
             try {
+                var existingUser = _context.Users.FirstOrDefault(u => u.Email == user.Email);
+                if (existingUser != null)
+                {
+                    return BadRequest("El correo ya está registrado.");
+                }
+
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
                 var client = new User
@@ -154,6 +160,12 @@ namespace Protech.Controllers
         {
             try
             {
+                var existingUser = _context.Users.FirstOrDefault(u => u.Email == user.Email);
+                if (existingUser != null)
+                {
+                    return BadRequest("El correo ya está registrado.");
+                }
+
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
                 var client = new User

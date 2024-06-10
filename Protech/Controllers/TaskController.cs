@@ -74,10 +74,27 @@ namespace Protech.Controllers
                             where t.IdTicketAdditionalTask == taskId
                             select t).FirstOrDefault();
 
-                if (task != null)
+                if (task == null)
                 {
                     return NotFound("Task not found");
                 }
+
+                var ticket = (from tk in _context.Tickets
+                              where tk.IdTicket == task.IdTicket
+                              select tk).FirstOrDefault();
+                if (ticket == null)
+                {
+                    return NotFound("Ticket not found");
+                }
+
+                var user = (from u in _context.Users
+                            where u.IdUser == ticket.IdEmployee
+                            select u).FirstOrDefault();
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
+
                 task.Finished = state;
                 _context.SaveChanges();
                 return Ok(task);

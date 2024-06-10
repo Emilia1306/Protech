@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Protech.Models;
+using Protech.Services;
 
 namespace Protech.Controllers
 {
@@ -11,10 +12,12 @@ namespace Protech.Controllers
     public class UserController : ControllerBase
     {
         private readonly ProtechContext _context;
+        private IConfiguration _configuration;
 
-        public UserController(ProtechContext context)
+        public UserController(ProtechContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
         [HttpPost]
         [Route("Login")]
@@ -133,6 +136,11 @@ namespace Protech.Controllers
                 };
                 _context.Users.Add(client);
                 _context.SaveChanges();
+
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.ClientCreation(user.Email, user.Name, user.Password);
+
                 return Ok(client);
             }
             catch (Exception ex)
@@ -161,6 +169,11 @@ namespace Protech.Controllers
                 };
                 _context.Users.Add(client);
                 _context.SaveChanges();
+
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.EmployeeCreation(user.Email, user.Name, user.Password);
+
                 return Ok(client);
             }
             catch (Exception ex)

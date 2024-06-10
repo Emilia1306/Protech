@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using Protech.Services;
 
 namespace Protech.Controllers
 {
@@ -15,11 +16,13 @@ namespace Protech.Controllers
     {
         private readonly ProtechContext _context;
         private readonly string _uploadFolderPath;
+        private IConfiguration _configuration;
 
-        public TicketController(ProtechContext context)
+        public TicketController(ProtechContext context, IConfiguration configuration)
         {
             _context = context;
             _uploadFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+            _configuration = configuration;
 
             if (!Directory.Exists(_uploadFolderPath))
             {
@@ -341,11 +344,20 @@ namespace Protech.Controllers
             {
                 return NotFound("Ticket not found");
             }
-            var employeeExists = await(from e in _context.Users
-                                       where e.IdUser == employeeId
-                                       select e).AnyAsync();
+            // Obtener el usuario que creó el ticket
+            var user = (from u in _context.Users
+                        where u.IdUser == ticket.IdUser
+                        select u).FirstOrDefault();
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
 
-            if (!employeeExists)
+            // Verificar si el empleado existe
+            var employee = await (from e in _context.Users
+                                  where e.IdUser == employeeId
+                                  select e).FirstOrDefaultAsync();
+            if (employee == null)
             {
                 return NotFound("Employee not found.");
             }
@@ -355,6 +367,12 @@ namespace Protech.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.CustomerTicketAssignment(user.Email, user.Name, ticket.IdTicket, DateTime.Now, ticket.Description, employee.Name, ticket.Name);
+
+                enviarCorreo.EmployeeTicketAssignment(employee.Email, employee.Name, ticket.IdTicket, DateTime.Now, ticket.Description, ticket.Name);
             }
             catch (Exception ex)
             {
@@ -371,6 +389,12 @@ namespace Protech.Controllers
             if (model == null)
             {
                 return BadRequest();
+            }
+
+            var user = await _context.Users.FindAsync(model.IdUser);
+            if (user == null)
+            {
+                return NotFound("User not found.");
             }
 
             var ticket = new Ticket
@@ -409,6 +433,10 @@ namespace Protech.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            correo enviarCorreo = new correo(_configuration);
+
+            enviarCorreo.TicketCreationConfirmation(user.Email, user.Name, ticket.IdTicket, ticket.Name, DateTime.Now, ticket.Description);
+
             return Ok(new { message = "Ticket creado con éxito", ticketId = ticket.IdTicket });
         }
         [HttpPut]
@@ -424,8 +452,22 @@ namespace Protech.Controllers
                 {
                     return NotFound("Ticket not found");
                 }
+                // Obtener la información del usuario
+                var user = (from u in _context.Users
+                            where u.IdUser == ticket.IdUser
+                            select u).FirstOrDefault();
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
+
                 ticket.State = state;
                 _context.SaveChanges();
+
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.UpdateTicketStatus(user.Email, user.Name, ticket.IdTicket, DateTime.Now, ticket.Name, ticket.State);
+
                 return Ok(ticket);
             }
             catch (Exception ex) {

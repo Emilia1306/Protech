@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Protech.Models;
+using Protech.Services;
 
 namespace Protech.Controllers
 {
@@ -9,10 +11,12 @@ namespace Protech.Controllers
     public class TaskController : ControllerBase
     {
         private readonly ProtechContext _context;
+        private IConfiguration _configuration;
 
-        public TaskController(ProtechContext context)
+        public TaskController(ProtechContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
         [HttpGet]
         [Route("GetTasks")]
@@ -32,6 +36,14 @@ namespace Protech.Controllers
         public IActionResult CreateTask(int employeeId, [FromBody] TicketAdditionalTask task) 
         {
             try {
+                var employee = (from e in _context.Users
+                                where e.IdUser == employeeId
+                                select e).FirstOrDefault();
+                if (employee == null)
+                {
+                    return NotFound("Employee Not Found");
+                }
+
                 var newTask = new TicketAdditionalTask {
 
                     IdTicket = task.IdTicket,
@@ -41,6 +53,11 @@ namespace Protech.Controllers
                 };
                 _context.TicketAdditionalTasks.Add(newTask);
                 _context.SaveChanges();
+
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.TaskAssignment(employee.Email, employee.Name, newTask.IdTicketAdditionalTask, newTask.IdTicket, DateTime.Now, newTask.Description);
+
                 return Ok(newTask);
             }
             catch (Exception ex)

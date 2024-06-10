@@ -671,7 +671,7 @@ namespace Protech.Services
                     <div class='container'>
                         <div class='header'>
                             <p>Ticket #{numTicket}</p>
-                            <div class='ticket-number'>#{estadoTicket}</div>
+                            <div class='ticket-number'>{estadoTicket}</div>
                             
                         </div>
                         <div class='content'>
@@ -787,6 +787,96 @@ namespace Protech.Services
                 </html>";
 
             enviar(destinatario, asunto, cuerpo);
+
+        }
+
+        public void UpdateTaskStatus(string destinatario, string username, int numTicket, DateTime fechafinalizacion, int tasknum, string taskdescription)
+        {
+            string asunto = "¡La tarea #" + numTicket + " ha sido finalizada! Accede a sus detalles";
+
+            string cuerpo = $@"
+                <html>
+                <head>
+                    <style>
+
+                        @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+                        body {{
+                            font-family: 'Poppins';
+                            color: #333333;
+                            line-height: 1.6;
+                        }}
+                        .container {{
+                            width: 100%;
+                            max-width: 600px;
+                            margin: 0 auto;
+                            padding: 20px;
+                            border: 1px solid #e0e0e0;
+                            border-radius: 10px;
+                            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                        }}
+                        .header {{
+                            text-align: center;
+                        }}
+                        .header img {{
+                            width: 50px;
+                        }}
+                        .header p {{
+                            font-size: 28px;
+                            color: black;
+                        }}
+                        .ticket-number {{
+                            font-size: 45px;
+                            color: #4CAF50;
+                            font-weight: bold;
+                        }}
+                        .content {{
+                            margin-top: 20px;
+                        }}
+                        .content p {{
+                            font-size: 16px;
+                        }}
+                        .details {{
+                            margin-top: 20px;
+                        }}
+                        .details p {{
+                            font-size: 16px;
+                        }}
+                        .footer {{
+                            margin-top: 20px;
+                            font-size: 16px;
+                            color: black;
+                        }}
+                        .bold {{
+                            font-weight: bold;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <div class='header'>
+                            <p>La Tarea #{tasknum} ha sido</p>
+                            <div class='ticket-number'>FINALIZADA</div>
+                            
+                        </div>
+                        <div class='content'>
+                            <p>Estimado/a {username}</p>
+                            <p>Le informamos que la tarea #{tasknum} del ticket #{numTicket} ha sido finalizada</p>
+                            <div class='details'>
+
+                                <p><span class='bold'>Número de Tarea:</span> {tasknum}</p>
+                                <p><span class='bold'>Descripción de la Tareat:</span> {taskdescription}</p>
+                                <p><span class='bold'>Fecha de finalización:</span> {fechafinalizacion}</p>
+
+                            </div>
+                        </div>
+                        
+                    </div>
+                </body>
+                </html>";
+
+            enviar(destinatario, asunto, cuerpo);
+
+
 
         }
 

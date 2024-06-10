@@ -108,7 +108,7 @@ namespace Protech.Controllers
         {
 
             List<User> userList = (from t in _context.Users
-                                   where t.IdUserCategory == 3
+                                   where t.IdUserCategory == 3 || t.IdUserCategory == 1
                                    select t).ToList();
 
             if (userList.Count == 0)

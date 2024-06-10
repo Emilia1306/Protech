@@ -24,14 +24,43 @@ namespace Protech.Controllers
         [Route("GetTasks")]
         public IActionResult GetTasks(int employeeId)
         {
-            List<TicketAdditionalTask> tasks = (from t in _context.TicketAdditionalTasks
-                                where t.IdEmployee == employeeId
-                                select t).ToList();
-            if (tasks.Count == 0)
+            var options = new JsonSerializerOptions
             {
-                return NotFound();
-            }
-            return Ok(tasks);
+                ReferenceHandler = ReferenceHandler.Preserve
+            };
+
+            var tasks = _context.TicketAdditionalTasks
+                        .Where(tat => tat.IdEmployee == employeeId)
+                        .Select(tat => new TicketAdditionalTask
+                        {
+                            IdTicketAdditionalTask = tat.IdTicketAdditionalTask,
+                            Description = tat.Description,
+                            Finished = tat.Finished,
+                            IdTicket = tat.IdTicket,
+                            IdEmployeeNavigation = _context.Users
+                                                    .Where(u => u.IdUser == tat.IdEmployee)
+                                                    .Select(u => new User
+                                                    {
+                                                        IdUser = u.IdUser,
+                                                        Name = u.Name,
+                                                        Cellphone = u.Cellphone,
+                                                        Email = u.Email,
+                                                        CompanyName = u.CompanyName
+                                                    })
+                                                    .FirstOrDefault()
+                        })
+                        .ToList();
+
+            var json = JsonSerializer.Serialize(tasks, options);
+
+            var contentResult = new ContentResult
+            {
+                Content = json,
+                ContentType = "application/json",
+                StatusCode = 200
+            };
+
+            return contentResult;
         }
         [HttpPost]
         [Route("CreateTask")]

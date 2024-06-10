@@ -474,7 +474,7 @@ namespace Protech.Controllers
                 return BadRequest(ex.Message);
             }
 
-            return Ok(ticket);
+            return Ok();
 
         }
         [HttpPost]

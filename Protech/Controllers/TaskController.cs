@@ -97,6 +97,10 @@ namespace Protech.Controllers
 
                 task.Finished = state;
                 _context.SaveChanges();
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.UpdateTaskStatus(user.Email, user.Name, ticket.IdTicket, DateTime.Now, taskId, task.Description);
+
                 return Ok(task);
             }
             catch (Exception ex)

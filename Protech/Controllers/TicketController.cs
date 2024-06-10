@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 
 namespace Protech.Controllers
 {
@@ -104,40 +105,52 @@ namespace Protech.Controllers
 
             var tickets = _context.Tickets
                 .Where(t => t.IdUser == userId)
-                .Select(t => new
+                .Select(t => new Ticket
                 {
-                    t.IdTicket,
-                    t.Name,
-                    AdditionalTasks = t.TicketAdditionalTasks.Select(task => new
-                    {
-                        task.IdTicketAdditionalTask,
-                        task.Description,
-                        task.Finished
-                    }).ToList(),
-                    Comments = t.TicketComments.Select(comment => new
-                    {
-                        comment.IdTicketComment,
-                        comment.Comment,
-                        comment.Date,
-                        User = new
-                        {
-                            comment.IdUserNavigation.IdUser,
-                            comment.IdUserNavigation.Name, 
-                            comment.IdUserNavigation.Email
-                        }
-                    }).ToList(),
-                    BackupFiles = t.BackupFiles.Select(file => new
-                    {
-                        file.IdBackupFile,
-                        file.Name,
-                    }).ToList()
+                    IdTicket = t.IdTicket,
+                    IdUser = t.IdUser,
+                    IdEmployee = t.IdEmployee,
+                    Name = t.Name,
+                    Description = t.Description,
+                    CreationDate = t.CreationDate,
+                    Priority = t.Priority,
+                    State = t.State,
+                    IdEmployeeNavigation = _context.Users
+                                            .Where(u => u.IdUser == t.IdEmployee)
+                                            .Select(u => new User
+                                            {
+                                                Name = u.Name,
+                                            })
+                                            .FirstOrDefault(),
+                    BackupFiles = _context.BackupFiles
+                                    .Where(bc => bc.IdTicket == t.IdTicket)
+                                    .Select(bc => new BackupFile
+                                    {
+                                        IdBackupFile = bc.IdBackupFile,
+                                        Name = bc.Name
+                                    })
+                                    .ToList(),
+                    IdUserNavigation = (from u in _context.Users
+                                       where u.IdUser == t.IdUser
+                                       select u).FirstOrDefault(),
+                    TicketComments = _context.TicketComments
+                                        .Where(tc => tc.IdTicket == t.IdTicket)
+                                        .Select(tc => new TicketComment
+                                        {
+                                            IdTicket = tc.IdTicket,
+                                            IdUser = t.IdUser,
+                                            Comment = tc.Comment,
+                                            Date = tc.Date,
+                                            IdUserNavigation = _context.Users
+                                                                .Where(u => u.IdUser == tc.IdUser)
+                                                                .Select(u => new User
+                                                                {
+                                                                    Name = u.Name,
+                                                                }).FirstOrDefault()
+                                        })
+                                        .ToList()
                 })
                 .ToList();
-
-            if (tickets.Count == 0)
-            {
-                return NotFound("User tickets not found");
-            }
 
             var json = JsonSerializer.Serialize(tickets, options); // Serializar los tickets a JSON con las opciones de serialización configuradas
 
@@ -210,15 +223,72 @@ namespace Protech.Controllers
         [Route("Assigned")]
         public IActionResult GetAssignedTickets(int employeeId) 
         {
-            List<Ticket> tickets = (from t in _context.Tickets
-                                   where t.IdEmployee == employeeId
-                                   select t).ToList();
-            if (tickets.Count == 0)
+            var options = new JsonSerializerOptions
             {
-                return NotFound("Assigned tickets not found");
-            }
-            return Ok(tickets);
+                ReferenceHandler = ReferenceHandler.Preserve // Agregar esta línea para preservar las referencias circulares
+            };
+
+            var tickets = _context.Tickets
+                .Where(t => t.IdEmployee == employeeId)
+                .Select(t => new Ticket
+                {
+                    IdTicket = t.IdTicket,
+                    IdUser = t.IdUser,
+                    IdEmployee = t.IdEmployee,
+                    Name = t.Name,
+                    Description = t.Description,
+                    CreationDate = t.CreationDate,
+                    Priority = t.Priority,
+                    State = t.State,
+                    IdEmployeeNavigation = _context.Users
+                                            .Where(u => u.IdUser == t.IdEmployee)
+                                            .Select(u => new User
+                                            {
+                                                Name = u.Name,
+                                            })
+                                            .FirstOrDefault(),
+                    BackupFiles = _context.BackupFiles
+                                    .Where(bc => bc.IdTicket == t.IdTicket)
+                                    .Select(bc => new BackupFile
+                                    {
+                                        IdBackupFile = bc.IdBackupFile,
+                                        Name = bc.Name
+                                    })
+                                    .ToList(),
+                    IdUserNavigation = (from u in _context.Users
+                                        where u.IdUser == t.IdUser
+                                        select u).FirstOrDefault(),
+                    TicketComments = _context.TicketComments
+                                        .Where(tc => tc.IdTicket == t.IdTicket)
+                                        .Select(tc => new TicketComment
+                                        {
+                                            IdTicket = tc.IdTicket,
+                                            IdUser = t.IdUser,
+                                            Comment = tc.Comment,
+                                            Date = tc.Date,
+                                            IdUserNavigation = _context.Users
+                                                                .Where(u => u.IdUser == tc.IdUser)
+                                                                .Select(u => new User
+                                                                {
+                                                                    Name = u.Name,
+                                                                }).FirstOrDefault()
+                                        })
+                                        .ToList()
+                })
+                .ToList();
+
+            var json = JsonSerializer.Serialize(tickets, options); // Serializar los tickets a JSON con las opciones de serialización configuradas
+
+            var contentResult = new ContentResult
+            {
+                Content = json,
+                ContentType = "application/json",
+                StatusCode = 200
+            };
+
+            return contentResult;
         }
+
         [HttpGet]
         [Route("Filter")]
         public IActionResult GetFilteredTickets(string? estado = null, string? empleado = null, DateTime? fechaInicio = null, DateTime? fechaFinal = null) {

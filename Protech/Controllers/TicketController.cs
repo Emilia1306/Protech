@@ -106,31 +106,68 @@ namespace Protech.Controllers
                 .Where(t => t.IdUser == userId)
                 .Select(t => new
                 {
-                    t.IdTicket,
-                    t.Name,
-                    AdditionalTasks = t.TicketAdditionalTasks.Select(task => new
-                    {
-                        task.IdTicketAdditionalTask,
-                        task.Description,
-                        task.Finished
-                    }).ToList(),
-                    Comments = t.TicketComments.Select(comment => new
-                    {
-                        comment.IdTicketComment,
-                        comment.Comment,
-                        comment.Date,
-                        User = new
-                        {
-                            comment.IdUserNavigation.IdUser,
-                            comment.IdUserNavigation.Name, 
-                            comment.IdUserNavigation.Email
-                        }
-                    }).ToList(),
-                    BackupFiles = t.BackupFiles.Select(file => new
-                    {
-                        file.IdBackupFile,
-                        file.Name,
-                    }).ToList()
+                    IdTicket = t.IdTicket,
+                    IdUser = t.IdUser,
+                    IdEmployee = t.IdEmployee,
+                    Name = t.Name,
+                    Description = t.Description,
+                    CreationDate = t.CreationDate,
+                    Priority = t.Priority,
+                    State = t.State,
+                    IdEmployeeNavigation = _context.Users
+                                            .Where(u => u.IdUser == t.IdEmployee)
+                                            .Select(u => new User
+                                            {
+                                                Name = u.Name,
+                                            })
+                                            .FirstOrDefault(),
+                    BackupFiles = _context.BackupFiles
+                                    .Where(bc => bc.IdTicket == t.IdTicket)
+                                    .Select(bc => new BackupFile
+                                    {
+                                        IdBackupFile = bc.IdBackupFile,
+                                        Name = bc.Name
+                                    })
+                                    .ToList(),
+                    IdUserNavigation = (from u in _context.Users
+                                       where u.IdUser == t.IdUser
+                                       select u).FirstOrDefault(),
+                    TicketComments = _context.TicketComments
+                                        .Where(tc => tc.IdTicket == t.IdTicket)
+                                        .Select(tc => new TicketComment
+                                        {
+                                            IdTicket = tc.IdTicket,
+                                            IdUser = t.IdUser,
+                                            Comment = tc.Comment,
+                                            Date = tc.Date,
+                                            IdUserNavigation = _context.Users
+                                                                .Where(u => u.IdUser == tc.IdUser)
+                                                                .Select(u => new User
+                                                                {
+                                                                    Name = u.Name,
+                                                                }).FirstOrDefault()
+                                        })
+                                        .ToList(),
+                    TicketAdditionalTasks = _context.TicketAdditionalTasks
+                                            .Where(tat => tat.IdTicket == t.IdTicket)
+                                            .Select(tat => new TicketAdditionalTask
+                                            {
+                                                IdTicketAdditionalTask = tat.IdTicketAdditionalTask,
+                                                Description = tat.Description,
+                                                Finished = tat.Finished,
+                                                IdEmployeeNavigation = _context.Users
+                                                                        .Where(u => u.IdUser == tat.IdEmployee)
+                                                                        .Select(u => new User
+                                                                        {
+                                                                            Name = u.Name,
+                                                                            TicketAdditionalTasks = null,
+                                                                            TicketComments = null,
+                                                                            TicketIdEmployeeNavigations = null,
+                                                                            TicketIdUserNavigations = null
+                                                                        })
+                                                                        .FirstOrDefault(),
+                                            })
+                                            .ToList()
                 })
                 .ToList();
 
@@ -162,31 +199,68 @@ namespace Protech.Controllers
             var tickets = _context.Tickets
                 .Select(t => new
                 {
-                    t.IdTicket,
-                    t.Name,
-                    AdditionalTasks = t.TicketAdditionalTasks.Select(task => new
-                    {
-                        task.IdTicketAdditionalTask,
-                        task.Description,
-                        task.Finished
-                    }).ToList(),
-                    Comments = t.TicketComments.Select(comment => new
-                    {
-                        comment.IdTicketComment,
-                        comment.Comment,
-                        comment.Date,
-                        User = new
-                        {
-                            comment.IdUserNavigation.IdUser,
-                            comment.IdUserNavigation.Name,
-                            comment.IdUserNavigation.Email
-                        }
-                    }).ToList(),
-                    BackupFiles = t.BackupFiles.Select(file => new
-                    {
-                        file.IdBackupFile,
-                        file.Name,
-                    }).ToList()
+                    IdTicket = t.IdTicket,
+                    IdUser = t.IdUser,
+                    IdEmployee = t.IdEmployee,
+                    Name = t.Name,
+                    Description = t.Description,
+                    CreationDate = t.CreationDate,
+                    Priority = t.Priority,
+                    State = t.State,
+                    IdEmployeeNavigation = _context.Users
+                                            .Where(u => u.IdUser == t.IdEmployee)
+                                            .Select(u => new User
+                                            {
+                                                Name = u.Name,
+                                            })
+                                            .FirstOrDefault(),
+                    BackupFiles = _context.BackupFiles
+                                    .Where(bc => bc.IdTicket == t.IdTicket)
+                                    .Select(bc => new BackupFile
+                                    {
+                                        IdBackupFile = bc.IdBackupFile,
+                                        Name = bc.Name
+                                    })
+                                    .ToList(),
+                    IdUserNavigation = (from u in _context.Users
+                                        where u.IdUser == t.IdUser
+                                        select u).FirstOrDefault(),
+                    TicketComments = _context.TicketComments
+                                        .Where(tc => tc.IdTicket == t.IdTicket)
+                                        .Select(tc => new TicketComment
+                                        {
+                                            IdTicket = tc.IdTicket,
+                                            IdUser = t.IdUser,
+                                            Comment = tc.Comment,
+                                            Date = tc.Date,
+                                            IdUserNavigation = _context.Users
+                                                                .Where(u => u.IdUser == tc.IdUser)
+                                                                .Select(u => new User
+                                                                {
+                                                                    Name = u.Name,
+                                                                }).FirstOrDefault()
+                                        })
+                                        .ToList(),
+                TicketAdditionalTasks = _context.TicketAdditionalTasks
+                                            .Where(tat => tat.IdTicket == t.IdTicket)
+                                            .Select(tat => new TicketAdditionalTask
+                                            {
+                                                IdTicketAdditionalTask = tat.IdTicketAdditionalTask,
+                                                Description = tat.Description,
+                                                Finished = tat.Finished,
+                                                IdEmployeeNavigation = _context.Users
+                                                                        .Where(u => u.IdUser == tat.IdEmployee)
+                                                                        .Select(u => new User
+                                                                        {
+                                                                            Name = u.Name,
+                                                                            TicketAdditionalTasks = null,
+                                                                            TicketComments = null,
+                                                                            TicketIdEmployeeNavigations = null,
+                                                                            TicketIdUserNavigations = null
+                                                                        })
+                                                                        .FirstOrDefault(),
+                                            })
+                                            .ToList()
                 })
                 .ToList();
 

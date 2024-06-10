@@ -57,10 +57,11 @@ namespace Protech.Controllers
                             where t.IdTicketAdditionalTask == taskId
                             select t).FirstOrDefault();
 
-                if (task != null)
+                if (task == null)
                 {
                     return NotFound("Task not found");
                 }
+
                 task.Finished = state;
                 _context.SaveChanges();
                 return Ok(task);

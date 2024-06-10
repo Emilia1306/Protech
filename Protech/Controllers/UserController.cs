@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Protech.Models;
+using Protech.Services;
 
 namespace Protech.Controllers
 {
@@ -11,10 +12,12 @@ namespace Protech.Controllers
     public class UserController : ControllerBase
     {
         private readonly ProtechContext _context;
+        private IConfiguration _configuration;
 
-        public UserController(ProtechContext context)
+        public UserController(ProtechContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
         [HttpPost]
         [Route("Login")]
@@ -118,6 +121,12 @@ namespace Protech.Controllers
         [Route("CreateClient")]
         public IActionResult createClient([FromBody] User user) {
             try {
+                var existingUser = _context.Users.FirstOrDefault(u => u.Email == user.Email);
+                if (existingUser != null)
+                {
+                    return BadRequest("El correo ya está registrado.");
+                }
+
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
                 var client = new User
@@ -133,6 +142,11 @@ namespace Protech.Controllers
                 };
                 _context.Users.Add(client);
                 _context.SaveChanges();
+
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.ClientCreation(user.Email, user.Name, user.Password);
+
                 return Ok(client);
             }
             catch (Exception ex)
@@ -146,6 +160,12 @@ namespace Protech.Controllers
         {
             try
             {
+                var existingUser = _context.Users.FirstOrDefault(u => u.Email == user.Email);
+                if (existingUser != null)
+                {
+                    return BadRequest("El correo ya está registrado.");
+                }
+
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
                 var client = new User
@@ -161,6 +181,11 @@ namespace Protech.Controllers
                 };
                 _context.Users.Add(client);
                 _context.SaveChanges();
+
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.EmployeeCreation(user.Email, user.Name, user.Password);
+
                 return Ok(client);
             }
             catch (Exception ex)

@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
+using Protech.Services;
 
 namespace Protech.Controllers
 {
@@ -14,11 +16,13 @@ namespace Protech.Controllers
     {
         private readonly ProtechContext _context;
         private readonly string _uploadFolderPath;
+        private IConfiguration _configuration;
 
-        public TicketController(ProtechContext context)
+        public TicketController(ProtechContext context, IConfiguration configuration)
         {
             _context = context;
             _uploadFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+            _configuration = configuration;
 
             if (!Directory.Exists(_uploadFolderPath))
             {
@@ -104,7 +108,7 @@ namespace Protech.Controllers
 
             var tickets = _context.Tickets
                 .Where(t => t.IdUser == userId)
-                .Select(t => new
+                .Select(t => new Ticket
                 {
                     IdTicket = t.IdTicket,
                     IdUser = t.IdUser,
@@ -170,11 +174,6 @@ namespace Protech.Controllers
                                             .ToList()
                 })
                 .ToList();
-
-            if (tickets.Count == 0)
-            {
-                return NotFound("User tickets not found");
-            }
 
             var json = JsonSerializer.Serialize(tickets, options); // Serializar los tickets a JSON con las opciones de serialización configuradas
 
@@ -284,15 +283,72 @@ namespace Protech.Controllers
         [Route("Assigned")]
         public IActionResult GetAssignedTickets(int employeeId) 
         {
-            List<Ticket> tickets = (from t in _context.Tickets
-                                   where t.IdEmployee == employeeId
-                                   select t).ToList();
-            if (tickets.Count == 0)
+            var options = new JsonSerializerOptions
             {
-                return NotFound("Assigned tickets not found");
-            }
-            return Ok(tickets);
+                ReferenceHandler = ReferenceHandler.Preserve // Agregar esta línea para preservar las referencias circulares
+            };
+
+            var tickets = _context.Tickets
+                .Where(t => t.IdEmployee == employeeId)
+                .Select(t => new Ticket
+                {
+                    IdTicket = t.IdTicket,
+                    IdUser = t.IdUser,
+                    IdEmployee = t.IdEmployee,
+                    Name = t.Name,
+                    Description = t.Description,
+                    CreationDate = t.CreationDate,
+                    Priority = t.Priority,
+                    State = t.State,
+                    IdEmployeeNavigation = _context.Users
+                                            .Where(u => u.IdUser == t.IdEmployee)
+                                            .Select(u => new User
+                                            {
+                                                Name = u.Name,
+                                            })
+                                            .FirstOrDefault(),
+                    BackupFiles = _context.BackupFiles
+                                    .Where(bc => bc.IdTicket == t.IdTicket)
+                                    .Select(bc => new BackupFile
+                                    {
+                                        IdBackupFile = bc.IdBackupFile,
+                                        Name = bc.Name
+                                    })
+                                    .ToList(),
+                    IdUserNavigation = (from u in _context.Users
+                                        where u.IdUser == t.IdUser
+                                        select u).FirstOrDefault(),
+                    TicketComments = _context.TicketComments
+                                        .Where(tc => tc.IdTicket == t.IdTicket)
+                                        .Select(tc => new TicketComment
+                                        {
+                                            IdTicket = tc.IdTicket,
+                                            IdUser = t.IdUser,
+                                            Comment = tc.Comment,
+                                            Date = tc.Date,
+                                            IdUserNavigation = _context.Users
+                                                                .Where(u => u.IdUser == tc.IdUser)
+                                                                .Select(u => new User
+                                                                {
+                                                                    Name = u.Name,
+                                                                }).FirstOrDefault()
+                                        })
+                                        .ToList()
+                })
+                .ToList();
+
+            var json = JsonSerializer.Serialize(tickets, options); // Serializar los tickets a JSON con las opciones de serialización configuradas
+
+            var contentResult = new ContentResult
+            {
+                Content = json,
+                ContentType = "application/json",
+                StatusCode = 200
+            };
+
+            return contentResult;
         }
+
         [HttpGet]
         [Route("Filter")]
         public IActionResult GetFilteredTickets(string? estado = null, string? empleado = null, DateTime? fechaInicio = null, DateTime? fechaFinal = null) {
@@ -345,11 +401,20 @@ namespace Protech.Controllers
             {
                 return NotFound("Ticket not found");
             }
-            var employeeExists = await(from e in _context.Users
-                                       where e.IdUser == employeeId
-                                       select e).AnyAsync();
+            // Obtener el usuario que creó el ticket
+            var user = (from u in _context.Users
+                        where u.IdUser == ticket.IdUser
+                        select u).FirstOrDefault();
+            if (user == null)
+            {
+                return NotFound("User not found");
+            }
 
-            if (!employeeExists)
+            // Verificar si el empleado existe
+            var employee = await (from e in _context.Users
+                                  where e.IdUser == employeeId
+                                  select e).FirstOrDefaultAsync();
+            if (employee == null)
             {
                 return NotFound("Employee not found.");
             }
@@ -359,6 +424,12 @@ namespace Protech.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.CustomerTicketAssignment(user.Email, user.Name, ticket.IdTicket, DateTime.Now, ticket.Description, employee.Name, ticket.Name);
+
+                enviarCorreo.EmployeeTicketAssignment(employee.Email, employee.Name, ticket.IdTicket, DateTime.Now, ticket.Description, ticket.Name);
             }
             catch (Exception ex)
             {
@@ -375,6 +446,12 @@ namespace Protech.Controllers
             if (model == null)
             {
                 return BadRequest();
+            }
+
+            var user = await _context.Users.FindAsync(model.IdUser);
+            if (user == null)
+            {
+                return NotFound("User not found.");
             }
 
             var ticket = new Ticket
@@ -413,6 +490,10 @@ namespace Protech.Controllers
                 await _context.SaveChangesAsync();
             }
 
+            correo enviarCorreo = new correo(_configuration);
+
+            enviarCorreo.TicketCreationConfirmation(user.Email, user.Name, ticket.IdTicket, ticket.Name, DateTime.Now, ticket.Description);
+
             return Ok(new { message = "Ticket creado con éxito", ticketId = ticket.IdTicket });
         }
         [HttpPut]
@@ -428,8 +509,22 @@ namespace Protech.Controllers
                 {
                     return NotFound("Ticket not found");
                 }
+                // Obtener la información del usuario
+                var user = (from u in _context.Users
+                            where u.IdUser == ticket.IdUser
+                            select u).FirstOrDefault();
+                if (user == null)
+                {
+                    return NotFound("User not found");
+                }
+
                 ticket.State = state;
                 _context.SaveChanges();
+
+                correo enviarCorreo = new correo(_configuration);
+
+                enviarCorreo.UpdateTicketStatus(user.Email, user.Name, ticket.IdTicket, DateTime.Now, ticket.Name, ticket.State);
+
                 return Ok(ticket);
             }
             catch (Exception ex) {
